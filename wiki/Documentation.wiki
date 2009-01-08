@@ -1,6 +1,4 @@
-#summary One-sentence summary of this page.
 #labels Java,Morph,Film
-
 = Introduction =
 
 With JavaMorph You can merge two pictures with intermediate steps so that exponent points, like eyes, mouth and nose, do not differ.
