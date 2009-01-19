@@ -3,15 +3,17 @@ package javamorph;
 import java.io.*;
 import java.awt.*;
 import java.awt.event.*;
+import javax.imageio.*;
 import javax.swing.*;
 import java.util.*;
+import java.awt.image.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: CConfig.
  * <br/>
@@ -24,20 +26,59 @@ import java.util.*;
 public class CConfig extends JDialog implements Runnable, WindowListener{
     /** Java API. */
     private static final long serialVersionUID = 1L;
+    /** User is adding mesh points with the GUI. */
+    public static final int EDIT_MESH_ADD = 1;
+    /** User is removing mesh points with the GUI. */
+    public static final int EDIT_MESH_SUB = 2;
+    /** User is moving mesh points with the GUI. */
+    public static final int EDIT_MESH_OFF = 3;
+    /** User is adding polygon points with the GUI. */
+    public static final int EDIT_POLYGON_ADD = 4;
+    /** User is removing polygon points with the GUI. */
+    public static final int EDIT_POLYGON_SUB = 5;
+    /** User is moving polygon points with the GUI. */
+    public static final int EDIT_POLYGON_OFF = 6;
     /** Rows of the mesh. Count of both windows is identical. */
     public static int ROWS_OF_MESH = 10;
     /** Columns of the mesh. Count of both windows is identical. */
     public static int COLUMNS_OF_MESH = 15;
     /** Points of the left polygon. Appears within the left window. */
-    public static int POINTS_OF_LEFT_POLYGON = 4;
-    /** Points of the right  polygon. Appears within the right window. */
-    public static int POINTS_OF_RIGHT_POLYGON = 5;
+    public static int POINTS_OF_POLYGON = 5;
     /** Number of morph steps. Steps between the pictures counted. */
     public static int NUM_OF_MORPH_STEPS = 5;
     /** Smooth radius of the polygon. Fuzzy polygon clipping done. */
     public static int SMOOTH_RADIUS = 19;
     /** Size of the marker points for mesh & polygon. */
-    public static int MARK_SIZE = 2;
+    public static int MARK_SIZE = 7;
+    /** Collection of points which represent the left picture's mesh. */
+    public static final Vector<Point> left_mesh = new Vector<Point>();
+    /** Collection of points which represent the right picture's mesh. */
+    public static final Vector<Point> right_mesh = new Vector<Point>();
+    /** Collection of points which represent the left picture's polygon.*/
+    public static final Vector<Point> left_polygon = new Vector<Point>();
+    /** Collection of points which represent the right picture's polygon. */
+    public static final Vector<Point> right_polygon = new Vector<Point>();
+    /** Left input image. */
+    public static BufferedImage left_image;
+    /** Right input image. */
+    public static BufferedImage right_image;
+    /** Current result image to be saved to disk. */
+    public static BufferedImage result_image;
+    /** Smoothed clip polygon matrix of the left picture. */
+    public static double left_clip[][];
+    /** Smoothed clip polygon matrix of the right picture. */
+    public static double right_clip[][];
+    /** Equal edit mode of both picture display viewers. */
+    public static int edit_state = EDIT_MESH_OFF;
+    /** Triangulation of the left picture. */
+    public static final Vector<CTriangle> left_triangles 
+        = new Vector<CTriangle>();
+    /** Triangulation of the right picture. */
+    public static final Vector<CTriangle> right_triangles
+        = new Vector<CTriangle>();
+    /** Current result triangulation. */
+    public static final Vector<CTriangle> result_triangles
+        = new Vector<CTriangle>();
     /** Property object. Can load and store the numerical data from file. */
     private Properties props = new Properties();
     /** Parent JFrame to enable modal behavior. */
@@ -63,22 +104,14 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
             true
         );
     /** Edit field for the property with the same name. */
-    private CEditField points_of_left_polygon = new CEditField(
-            "Points of left polygon : ",
-            POINTS_OF_LEFT_POLYGON,
+    private CEditField points_of_polygon = new CEditField(
+            "Points of polygon : ",
+            POINTS_OF_POLYGON,
             3,
             99,
             true
         );
-    /** Edit field for the property with the same name. */
-    private CEditField points_of_right_polygon = new CEditField(
-            "Points of right polygon : ",
-            POINTS_OF_RIGHT_POLYGON,
-            3,
-            99,
-            true
-        );
-    /** Edit field for the property with the same name. */
+     /** Edit field for the property with the same name. */
     private CEditField num_of_morph_steps = new CEditField(
             "Num of morph steps : ",
             NUM_OF_MORPH_STEPS,
@@ -94,12 +127,47 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
             999,
             true
     );
+    /** Size of cursor and also point marks. */
+    private CEditField mark_size = new CEditField(
+            "Mark size : ",
+            MARK_SIZE,
+            2,
+            100,
+            true
+    );
     /** Display field for the working directory with the same name. */
     private CEditField working_dir = new CEditField(
             "Workdir : ",
             CStrings.WORKDIR,
             false
         );
+    /** Static init() reading pictures. */
+    static{
+        try{
+            /* Read left picture. */
+            left_image = ImageIO.read(new File(CStrings.LEFT_INPUT));
+            /* Read right picture. */
+            right_image = ImageIO.read(new File(CStrings.RIGHT_INPUT));
+            /* Calculate size of result picture. */
+            int 
+                w = Math.max(left_image.getWidth(), right_image.getWidth()),
+                h = Math.max(left_image.getHeight(), right_image.getHeight());
+            /* Create empty result picture. */
+            result_image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+            /* Create left clip matrix. */
+            left_clip = 
+                new double[left_image.getWidth()][left_image.getHeight()];
+            /* Create right clip matrix. */
+            right_clip = 
+                new double[right_image.getWidth()][right_image.getHeight()];
+        }catch(Exception e){
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+            /* Show error pop up. */
+            JOptionPane.showMessageDialog
+                (null, "Can't load image. See also console output!");
+        }
+    }
     /**
      * Constructor.
      * @param parent The parent JFrame.
@@ -111,19 +179,23 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
         this.left = left;
         this.right = right;
         this.parent = parent;
+        /* Initialize dialog. */
         this.getContentPane().setLayout(new GridLayout(7, 1));
         this.getContentPane().add(this.num_of_morph_steps);
         this.getContentPane().add(this.rows_of_mesh);
         this.getContentPane().add(this.columns_of_mesh);
-        this.getContentPane().add(this.points_of_left_polygon);
-        this.getContentPane().add(this.points_of_right_polygon);
+        this.getContentPane().add(this.points_of_polygon);
         this.getContentPane().add(this.smooth_radius);
+        this.getContentPane().add(this.mark_size);
         this.getContentPane().add(this.working_dir);
         this.getContentPane().setSize(this.getContentPane().getPreferredSize());
         this.pack();
+        /* Ensure properties save on exit. */
         Runtime.getRuntime().addShutdownHook(new Thread(this));
+        /* Load properties. */
         File p = new File(CStrings.PROPS);
         String s;
+        /* a) load. */
         if(p.exists()){
             try{
                 props.load(new FileInputStream(p));
@@ -131,10 +203,8 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
                 ROWS_OF_MESH = Integer.parseInt(s);
                 s = props.getProperty("COLUMNS_OF_MESH");
                 COLUMNS_OF_MESH = Integer.parseInt(s);
-                s = props.getProperty("POINTS_OF_LEFT_POLYGON");
-                POINTS_OF_LEFT_POLYGON = Integer.parseInt(s);
-                s = props.getProperty("POINTS_OF_RIGHT_POLYGON");
-                POINTS_OF_RIGHT_POLYGON = Integer.parseInt(s);
+                s = props.getProperty("POINTS_OF_POLYGON");
+                POINTS_OF_POLYGON = Integer.parseInt(s);
                 s = props.getProperty("NUM_OF_MORPH_STEPS");
                 NUM_OF_MORPH_STEPS = Integer.parseInt(s);
                 s = props.getProperty("SMOOTH_RADIUS");
@@ -145,13 +215,12 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
                 System.err.println(e.getMessage());
                 e.printStackTrace();
             }
+        /* b) initialize by default. */ 
         }else{
             props.setProperty("ROWS_OF_MESH", "" + ROWS_OF_MESH);
             props.setProperty("COLUMNS_OF_MESH", "" + COLUMNS_OF_MESH);
             props.setProperty
-            ("POINTS_OF_LEFT_POLYGON", "" + POINTS_OF_LEFT_POLYGON);
-            props.setProperty
-            ("POINTS_OF_RIGHT_POLYGON", "" + POINTS_OF_RIGHT_POLYGON);
+            ("POINTS_OF_POLYGON", "" + POINTS_OF_POLYGON);
             props.setProperty("NUM_OF_MORPH_STEPS", "" + NUM_OF_MORPH_STEPS);
             props.setProperty("SMOOTH_RADIUS", "" + SMOOTH_RADIUS);
             props.setProperty("MARK_SIZE", "" + MARK_SIZE);
@@ -161,10 +230,13 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
     /**
      * Show the config dialog when requested by user's menu.
      */
-    public void open(){        
+    public void open(){
+        /* Set fixed size. */
         this.setResizable(false);
+        /* Position on screen. */
         this.setLocation
         (parent.getLocation().x + 10, parent.getLocation().y + 10);
+        /* Show. */
         this.setVisible(true);
     }
     /**
@@ -177,9 +249,7 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
             props.setProperty("ROWS_OF_MESH", "" + ROWS_OF_MESH);
             props.setProperty("COLUMNS_OF_MESH", "" + COLUMNS_OF_MESH);
             props.setProperty
-            ("POINTS_OF_LEFT_POLYGON", "" + POINTS_OF_LEFT_POLYGON);
-            props.setProperty
-            ("POINTS_OF_RIGHT_POLYGON", "" + POINTS_OF_RIGHT_POLYGON);
+            ("POINTS_OF_POLYGON", "" + POINTS_OF_POLYGON);
             props.setProperty("NUM_OF_MORPH_STEPS", "" + NUM_OF_MORPH_STEPS);
             props.setProperty("SMOOTH_RADIUS", "" + SMOOTH_RADIUS);
             props.setProperty("MARK_SIZE", "" + MARK_SIZE);
@@ -202,25 +272,22 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
         boolean
             msh = COLUMNS_OF_MESH != columns_of_mesh.getNumber() ||
                 ROWS_OF_MESH != rows_of_mesh.getNumber(),
-            pgl = POINTS_OF_LEFT_POLYGON != points_of_left_polygon.getNumber(),
-            pgr = POINTS_OF_RIGHT_POLYGON !=
-                points_of_right_polygon.getNumber();
+            pg = POINTS_OF_POLYGON != points_of_polygon.getNumber();
         COLUMNS_OF_MESH = columns_of_mesh.getNumber();
         ROWS_OF_MESH = rows_of_mesh.getNumber();
-        POINTS_OF_LEFT_POLYGON = points_of_left_polygon.getNumber();
-        POINTS_OF_RIGHT_POLYGON = points_of_right_polygon.getNumber();
+        POINTS_OF_POLYGON = points_of_polygon.getNumber();
         SMOOTH_RADIUS = smooth_radius.getNumber();
         NUM_OF_MORPH_STEPS = num_of_morph_steps.getNumber();
+        MARK_SIZE = mark_size.getNumber();
         if(msh){
-            left.deleteMesh();
-            right.deleteMesh();
+            left.initMesh();
+            right.initMesh();
         }
-        if(pgl){
-            left.deletePolygon();
+        if(pg){
+            left.initPolygon();
+            right.initPolygon();
         }
-        if(pgr){
-            right.deletePolygon();
-        }
+        parent.repaint();
     }
     /** Event API. */
     public void windowDeactivated(WindowEvent e){}
@@ -233,12 +300,13 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
      * data into the shown dialog.
      */
     public void windowOpened(WindowEvent e){
-        this.columns_of_mesh.setValue(COLUMNS_OF_MESH);
-        this.rows_of_mesh.setValue(ROWS_OF_MESH);
-        this.points_of_left_polygon.setValue(POINTS_OF_LEFT_POLYGON);
-        this.points_of_right_polygon.setValue(POINTS_OF_RIGHT_POLYGON);
-        this.smooth_radius.setValue(SMOOTH_RADIUS);
-        this.num_of_morph_steps.setValue(NUM_OF_MORPH_STEPS);
-        this.working_dir.setValue(CStrings.WORKDIR);
+        /* Initialize text fields by actual values. */
+        columns_of_mesh.setValue(COLUMNS_OF_MESH);
+        rows_of_mesh.setValue(ROWS_OF_MESH);
+        points_of_polygon.setValue(POINTS_OF_POLYGON);
+        smooth_radius.setValue(SMOOTH_RADIUS);
+        num_of_morph_steps.setValue(NUM_OF_MORPH_STEPS);
+        mark_size.setValue(MARK_SIZE);
+        working_dir.setValue(CStrings.WORKDIR);
     }
 }

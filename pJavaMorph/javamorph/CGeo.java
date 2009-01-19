@@ -3,11 +3,11 @@ package javamorph;
 import java.awt.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: CGeo.
  * <br/>
@@ -15,36 +15,10 @@ import java.awt.*;
  * <br/>
  * Description: Helper class for geometric calculations.
  * <br/>
- * Hint: a) Split mesh into triangles. b) Handle interpolation - transformation.
+ * Handle interpolation - transformation.
+ * Triangulation now done by CTriangulation.
  */
 public class CGeo {
-    /**
-     * Make list of triangles from the quad mesh.
-     * @param mesh Quad mesh.
-     * @return Array of triangles.
-     */
-    public static CTriangle[] getTriangles(Point[][] mesh){
-        int r = mesh.length - 1, c = mesh[0].length - 1;
-        CTriangle[] result = new CTriangle[c * r * 2];
-        CTriangle t;
-        for(int row = 0; row < r; ++ row){
-            for(int col = 0; col < c; ++ col){
-                t = new CTriangle(
-                        mesh[row][col],
-                        mesh[row][col + 1],
-                        mesh[row + 1][col]
-                    );
-                result[(row * c + col) * 2] = t;
-                t = new CTriangle(
-                        mesh[row + 1][col + 1],
-                        mesh[row][col + 1],
-                        mesh[row + 1][col]
-                    );
-                result[(row * c + col) * 2 + 1] = t;
-            }
-        }
-        return result;
-    }
     /**
      * Provide reverse transformation matrix from one result triangle to one
      * input picture triangle. All three points of the two triangles
@@ -54,6 +28,7 @@ public class CGeo {
      * @return Floating point transformation matrix. Indexes are row / column.
      */
     public static CTransform getTrafo(CTriangle origin_, CTriangle result){
+        /* Initialize helper variables. */
         int
             x1_ = origin_.getPoints()[0].x,
             x2_ = origin_.getPoints()[1].x,
@@ -69,6 +44,7 @@ public class CGeo {
             y3 = result.getPoints()[2].y;
         CTransform trafo = new CTransform();
         double t, u, d;
+        /* Try variants depending on which points are orthogonal. */
         if(x1 != x3){
             d = (double)x1 - x3;
             t = ((double)x1 - x2) / d;
@@ -103,8 +79,10 @@ public class CGeo {
      */
     public static Point getOrigin_(Point result, CTransform trafo){
         Point origin_ = new Point();
+        /* Transform x. */
         origin_.x = (int)
             (result.x * trafo.a_11 + result.y * trafo.a_12 + trafo.a_13);
+        /* Transform y. */
         origin_.y = (int)
             (result.x * trafo.a_21 + result.y * trafo.a_22 + trafo.a_23);
         return origin_;

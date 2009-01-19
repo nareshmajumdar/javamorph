@@ -4,14 +4,13 @@ import java.io.*;
 import java.awt.*;
 import javax.imageio.*;
 import javax.swing.*;
-import java.awt.image.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: CMorphOperator.
  * <br/>
@@ -20,131 +19,91 @@ import java.awt.image.*;
  * Description: Morph the result from left input to right input depending on
  * the ratio parameter.
  * <br/>
- * Hint: Writes the result to the working directory.
+ * Hint: Writes the result into the working directory.
  */
 public class CMorphOperator implements Runnable{
     /** Application's main class. */
-    private CMain parent;
-    /** Mesh of the left picture. */
-    private Point left_mesh[][];
-    /** Mesh of the right picture. */
-    private Point right_mesh[][];
-    /** Mesh of the result picture. */
-    private Point result_mesh[][];
-    /** Left input image. */
-    private BufferedImage left_image;
-    /** Right input image. */
-    private BufferedImage right_image;
-    /** Current result image. */
-    private BufferedImage result_image;
-    /** Size of the left input image. */
-    private Dimension left_size;
-    /** Size of the right input image. */
-    private Dimension right_size;
-    /** Size of the current result image. */
-    private Dimension result_size;
+    private static CMain parent;
     /** 
      * If <code>0.0</code then output is the left image, if <code>1.0</code>
      * then output is the right image. Every value between them leads to a
      * merged image.
      */
-    private double ratio;
+    private static double ratio;
     /** Current point coordinates of the left image. */
-    private Point left_point = new Point();
+    private static Point left_point = new Point();
     /** Current point coordinates of the right image. */
-    private Point right_point = new Point();
+    private static Point right_point = new Point();
     /** Current point coordinates of the result image. */
-    private Point result_point = new Point();
+    private static Point result_point = new Point();
     /** RGB value of the current left pixel. */
-    private int left_pixel;
+    private static int left_pixel;
     /** RGB value of the current right pixel. */
-    private int right_pixel;
+    private static int right_pixel;
     /** RGB value of the current result pixel. */
-    private int result_pixel;
-    /** Current row of the mesh. */
-    private int r;
-    /** Current column of the mesh. */
-    private int c;
+    private static int result_pixel;
     /** Transformation matrix from result to left point. */
-    private CTransform left_trafo;
+    private static CTransform left_trafo;
     /** Transformation matrix from result to right point. */
-    private CTransform right_trafo;
-    /** Triangulation of the left picture. */
-    private CTriangle left_triangles[];
-    /** Triangulation of the right picture. */
-    private CTriangle right_triangles[];
-    /** Triangulation of the current result picture. */
-    private CTriangle result_triangles[];
+    private static CTransform right_trafo;
     /** Index of the current triangle within all three lists. */
-    private int t_idx;
+    private static int t_idx;
     /** List of result points situated within the current result triangle. */
-    private Point withins[];
-    /** Polygon clip matrix of the left picture. */
-    private double left_clip[][]; 
-    /** Polygon clip matrix of the right picture. */
-    private double right_clip[][];
+    private static Point withins[];
     /** Polygon clip ratio of the current left pixel. */
-    private double left_ratio;
+    private static double left_ratio;
     /** Polygon clip ratio of the current right pixel. */
-    private double right_ratio;
+    private static double right_ratio;
     /** If <code>true</code> the user forces the morph process to abort. */
-    private boolean f_break;
+    private static boolean f_break;
     /** Instance of the progress bar. */
-    private CProgress progress;
+    private static CProgress progress;
     /**
-     * Constructor.
-     * @param parent Application's main class.
-     * @param left_mesh Mesh of left input picture.
-     * @param right_mesh Mesh of right input picture.
-     * @param left_clip Left polygon clip matrix.
-     * @param right_clip Right polygon clip matrix.
-     * @param left_image Left input image raster.
-     * @param right_image Right input image raster.
-     * @param progress Graphical progress bar.
+     * Initialize static class components.
+     * 
+     * @param parent Main JFrame.
+     * @param progress Progress bar.
      */
-    public CMorphOperator(
-            CMain parent,
-            Point left_mesh[][],
-            Point right_mesh[][],
-            double left_clip[][],
-            double right_clip[][],
-            BufferedImage left_image,
-            BufferedImage right_image,
-            CProgress progress){
-        this.parent = parent;
-        this.left_mesh = left_mesh;
-        this.right_mesh = right_mesh;
-        this.left_clip = left_clip;
-        this.right_clip = right_clip;
-        this.left_image = left_image;
-        this.right_image = right_image;
-        this.progress = progress;
-        this.left_triangles = CGeo.getTriangles(this.left_mesh);
-        this.right_triangles = CGeo.getTriangles(this.right_mesh);
+    public static void morph(CMain parent, CProgress progress){
+        /* Assign parameters. */
+        CMorphOperator.parent = parent;
+        CMorphOperator.progress = progress;
     }
     /**
      * Enable abort of the morph process forced by user.
      */
-    public void doBreak(){
-        this.f_break = true;
+    public static void doBreak(){
+        f_break = true;
     }
     /**
      * Thread API. Starts morph batch for a number of intermediate pictures
      * with increasing ratio value.
      */
     public void run(){
-        this.f_break = false;
+        f_break = false;
         try{
             for(int i = 0;
                 (i <= CConfig.NUM_OF_MORPH_STEPS) && (!f_break); 
                 ++i){
+                /* Clear result picture.*/
+                for(int x = 0; x < CConfig.result_image.getWidth(); ++x){
+                    for(int y = 0; y < CConfig.result_image.getHeight(); ++ y){
+                        CConfig.result_image.setRGB(x, y, 0x0);
+                    }
+                }
                 /* Calculate ratio. */
-                this.ratio = ((double)i / CConfig.NUM_OF_MORPH_STEPS);
-                /* Work. */
-                this.morph();
+                ratio = ((double)i / CConfig.NUM_OF_MORPH_STEPS);
+                /* Depends on current ratio. */
+                genResultTriangles();
+                /* Iterate through the triangles. */
+                for(t_idx = 0; 
+                    t_idx < CConfig.result_triangles.size(); 
+                    ++t_idx){
+                    triangle();
+                }
                 File f = new File(CStrings.getOutput(i));
                 /* Save image into workdir. */
-                ImageIO.write(this.result_image, "jpg",f);
+                ImageIO.write(CConfig.result_image, "jpg",f);
                 /* Show progress. */
                 progress.setProgress(i, 0, CConfig.NUM_OF_MORPH_STEPS);
                 Thread.sleep(1);
@@ -159,82 +118,69 @@ public class CMorphOperator implements Runnable{
         }
     }
     /**
-     * Create one intermediate picture.
-     */
-    private void morph(){
-        left_size = new Dimension(
-                left_image.getWidth(),
-                left_image.getHeight());
-        right_size = new Dimension(
-                right_image.getWidth(),
-                right_image.getHeight());
-        this.result_size = new Dimension(
-                Math.max(left_size.width, right_size.width),
-                Math.max(left_size.height, right_size.height));
-        this.result_image = 
-            new BufferedImage(result_size.width, 
-            result_size.height,
-            BufferedImage.TYPE_INT_RGB);
-        /* Depends on current ratio. */
-        genMesh();
-        /* Depends on current ratio. */
-        this.result_triangles = CGeo.getTriangles(this.result_mesh);
-        /* Iterate through the triangles. */
-        for(t_idx = 0; t_idx < result_triangles.length; ++t_idx){
-            this.triangle();
-        }
-    }
-    /**
      * Make a weighted average mesh depending on the current ratio.
      */
-    private void genMesh(){
-        this.result_mesh = new Point[CConfig.ROWS_OF_MESH + 1]
-                                     [CConfig.COLUMNS_OF_MESH + 1];
-        /* For all mesh crosses. */
-        for(r = 0; r <= CConfig.ROWS_OF_MESH; ++r){
-            for(c = 0; c <= CConfig.COLUMNS_OF_MESH; ++ c){
-                double
-                    lx = left_mesh[r][c].x * (1.0 - ratio),
-                    rx = right_mesh[r][c].x* ratio,
-                    ly = left_mesh[r][c].y * (1 - ratio),
-                    ry = right_mesh[r][c].y * ratio,
-                    x = lx + rx,
-                    y = ly + ry;
-                this.result_mesh[r][c] = new Point((int)x, (int)y);
-            }
+    private static void genResultTriangles(){
+        CConfig.result_triangles.clear();
+        /* For all triangles belonging to both pictures. */
+        /* First with first, second with second and so on. */ 
+        for(int i = 0; i < CConfig.left_triangles.size(); ++i){
+            CTriangle 
+                r = CConfig.left_triangles.get(i),
+                s = CConfig.right_triangles.get(i),
+                t = new CTriangle(
+                    merge(r.getPoints()[0], s.getPoints()[0]),
+                    merge(r.getPoints()[1], s.getPoints()[1]),
+                    merge(r.getPoints()[2], s.getPoints()[2])
+                );
+            /* Add merged triangle relating to ratio. */
+            CConfig.result_triangles.add(t);
         }
+    }
+    /** Merge two points weighted by ratio.
+     * 
+     * @param p1 First point.
+     * @param p2 Second point.
+     * @return Point on a line between them.
+     */
+    private static Point merge(Point p1, Point p2){
+        return new Point(
+            (int)(p1.x * (1.0 - ratio) + p2.x * ratio), 
+            (int)(p1.y * (1.0 - ratio) + p2.y * ratio));
     }
     /**
      * Merge all points of a triangle.
      */
-    private void triangle(){
-        CTriangle result = this.result_triangles[this.t_idx];
+    private static void triangle(){
+        CTriangle result = CConfig.result_triangles.get(t_idx);
         /* Left transformation matrix. */
-        this.left_trafo = CGeo.getTrafo(left_triangles[t_idx], result);
+        left_trafo = CGeo.getTrafo(CConfig.left_triangles.get(t_idx), result);
         /* Right transformation matrix. */
-        this.right_trafo = CGeo.getTrafo(right_triangles[t_idx], result);
+        right_trafo = CGeo.getTrafo(CConfig.right_triangles.get(t_idx), result);
         /* For all target points. */
-        this.withins = result.getWithins();
-        for(int i = 0; i < this.withins.length; ++i){
-            this.result_point = this.withins[i];
+        withins = result.getWithins();
+        for(Point p: withins){
+            result_point = p;
             /* Transform left. */
-            this.left_point = CGeo.getOrigin_(result_point, left_trafo);
+            left_point = CGeo.getOrigin_(result_point, left_trafo);
             /* Transform right. */
-            this.right_point = CGeo.getOrigin_(result_point, right_trafo);
-            /* Merge booth pixels. */
-            this.merge();
+            right_point = CGeo.getOrigin_(result_point, right_trafo);
+            /* Merge both pixels. */
+            merge();
         }   
     }
     /**
      * Merge (left.pixel, right.pixel)->(result.pixel). Result depends on
-     * ratio value & booth polygon matrixes.
+     * ratio value & both polygon matrixes.
      */
-    private void merge(){
+    private static void merge(){
         try{
-            left_pixel = left_image.getRGB(left_point.x, left_point.y);
-            right_pixel = right_image.getRGB(right_point.x, right_point.y);
-            left_ratio = left_clip[left_point.x][left_point.y];
-            right_ratio = right_clip[right_point.x][right_point.y];
+            left_pixel = CConfig.left_image.getRGB
+                (left_point.x, left_point.y);
+            right_pixel = CConfig.right_image.getRGB
+                (right_point.x, right_point.y);
+            left_ratio = CConfig.left_clip[left_point.x][left_point.y];
+            right_ratio = CConfig.right_clip[right_point.x][right_point.y];
             /* Unify all 3 ratios. */
             double
                 t1 = left_ratio,
@@ -254,8 +200,10 @@ public class CMorphOperator implements Runnable{
                 r = (int)(l_r * fl + r_r * fr),
                 g = (int)(l_g * fl + r_g * fr),
                 b = (int)(l_b * fl + r_b * fr);
+            /* Set pixel. */
             result_pixel = (0xff000000) | (r << 16) | (g << 8) | b;    
-            result_image.setRGB(result_point.x, result_point.y, result_pixel);
+            CConfig.result_image.setRGB
+                (result_point.x, result_point.y, result_pixel);
         }catch(Exception e){}
-     }
+    }
 }

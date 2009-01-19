@@ -2,13 +2,14 @@ package javamorph;
 
 import java.awt.*;
 import java.util.*;
+import java.awt.image.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: CTriangle.
  * <br/>
@@ -18,9 +19,11 @@ import java.util.*;
  * <br/> 
  * Hint: Relating to picture pixel units.
  */
-public class CTriangle {
-    /** All three corners of the triangle. */
+public class CTriangle implements Comparator<Point>{
+    /** All three corners of the triangle. (not sorted) */
     private Point p[] = new Point[]{new Point(), new Point(), new Point()};
+    /** All three corners of the triangle. (sorted by comparator) */
+    private Point c[] = new Point[]{new Point(), new Point(), new Point()};
     /** All pixel points within the triangle. */
     private Point withins[];
     /** Rectangular border of the triangle. */
@@ -45,6 +48,13 @@ public class CTriangle {
         p[1].y = _p1.y;
         p[2].x = _p2.x;
         p[2].y = _p2.y;
+        c[0].x = _p0.x;
+        c[0].y = _p0.y;
+        c[1].x = _p1.x;
+        c[1].y = _p1.y;
+        c[2].x = _p2.x;
+        c[2].y = _p2.y;
+        Arrays.sort(c, this);
         /* Calculate the y range. */
         for(int i = 0;i < 3; ++i){
             this.y_min = Math.min(this.y_min, p[i].y);
@@ -82,9 +92,72 @@ public class CTriangle {
         return this.p;
     }
     /**
+     * Draw the triangle to an image.
+     * 
+     * @param image Image to draw the lines to.
+     */
+    public void debug(BufferedImage image){
+        drawLine(image, p[0], p[1]);
+        drawLine(image, p[1], p[2]);
+        drawLine(image, p[2], p[0]);
+    }
+    /**
+     * Hash code calculated by sorted points.
+     * See hash contract.
+     */
+    public int hashCode(){
+        return (c[0].hashCode() + c[1].hashCode() + c[2].hashCode()) % 
+            Integer.MAX_VALUE;
+    }
+    /**
+     * Equal if the sorted points are equal.
+     * See has contract.
+     */
+    public boolean equals(Object obj){
+        CTriangle other = (CTriangle)obj;
+        return c[0].equals(other.c[0]) && 
+            c[1].equals(other.c[1]) && 
+            c[2].equals(other.c[2]);
+    }
+    /**
+     * Due to comparator API.
+     * Used as sort order for the points.
+     */
+    public int compare(Point o1, Point o2) {
+        if(o1.x == o2.x){
+            return o1.y - o2.y;
+        }else{
+            return o1.x - o2.x;
+        }
+    }
+    /**
+     * Debug one line to an image.
+     * @param image Image to draw to.
+     * @param p1 First point.
+     * @param p2 Second point.
+     */
+    private void drawLine(BufferedImage image, Point p1, Point p2){
+        if(p1.equals(p2))return;
+        int 
+            x1 = p1.x,
+            x2 = p2.x,
+            y1 = p1.y,
+            y2 = p2.y,
+            dx = x2 - x1,
+            dy = y2 - y1,
+            param = Math.max(Math.abs(dx), Math.abs(dy)),
+            x,
+            y;
+        for(int p = 0; p <= param; ++p){
+            x = (int)(x1 + (double)p * dx / (double)param);
+            y = (int)(y1 + (double)p * dy / (double)param);
+            image.setRGB(x, y, 0xffff0000);
+        }
+    }
+    /**
      * Calculate left & right edge point of the scan line. The scan line must 
      * cross two of the three edges. Seldom the scan line crosses one edge
-     * + two end points of the other booth edges.
+     * + two end points of the other both edges.
      * @param y Vertical position of the scan line.
      */
     private void calculateXBounds(int y){

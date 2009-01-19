@@ -3,11 +3,11 @@ package javamorph;
 import java.awt.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: IDecorator.
  * <br/>
@@ -27,10 +27,4 @@ public interface IDecorator {
      * Notify the decorator implementation of the available size to draw to.
      * @param size Size in screen pixel units.
      */
-    public void setSize(Dimension size);
-    /**
-     * Allow user actions to the decorator.
-     * @param active <code>true</code> if the decorator is editable.
-     */
-    public void setActive(boolean active);
 }

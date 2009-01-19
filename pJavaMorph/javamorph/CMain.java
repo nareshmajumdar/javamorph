@@ -8,11 +8,11 @@ import javax.imageio.*;
 import javax.swing.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: CMain.
  * <br/>
@@ -29,10 +29,25 @@ public class CMain extends JPanel
     /** Minimum size of this application on the screen. */
     public static final Dimension MIN_SIZE = new Dimension(100,200);
     /** Left picture's display. */
-    private CFrame left = new CFrame(this, true);
+    private CFrame left = new CFrame(
+            this, CConfig.left_mesh, 
+            CConfig.left_polygon, 
+            CConfig.left_image,
+            CConfig.left_clip,
+            new File(CStrings.LEFT_MESH),
+            new File(CStrings.LEFT_POLYGON),
+            new File(CStrings.LEFT_DEBUG));
     /** Right picture's display. */
-    private CFrame right = new CFrame(this, false);
-    /** Separator line between booth displays. */
+    private CFrame right = new CFrame(
+            this,
+            CConfig.right_mesh,
+            CConfig.right_polygon,
+            CConfig.right_image,
+            CConfig.right_clip,
+            new File(CStrings.RIGHT_MESH),
+            new File(CStrings.RIGHT_POLYGON),
+            new File(CStrings.RIGHT_DEBUG));
+    /** Separator line between both displays. */
     private CSeparator sep = new CSeparator();
     /** JFrame, as top level window on the screen. */
     private JFrame frame = new JFrame(CStrings.PROG + ", " + CStrings.VERSION);
@@ -46,6 +61,7 @@ public class CMain extends JPanel
      *  Constructor. Laying out the applicaiton window.
      */
     public CMain(){
+        /* Load application window icon. */
         ClassLoader loader = ClassLoader.getSystemClassLoader();
         InputStream in = loader.getResourceAsStream("JavaMorph.png");
         try{
@@ -55,6 +71,7 @@ public class CMain extends JPanel
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
+        /* Initialize components. */
         this.setLayout(this);
         this.add(left);
         this.add(right);
@@ -63,14 +80,6 @@ public class CMain extends JPanel
         this.frame.getContentPane().add(this);
         this.frame.addWindowListener(this);
         this.frame.pack();
-        this.left.load(
-                CStrings.LEFT_INPUT, 
-                CStrings.LEFT_MESH, 
-                CStrings.LEFT_POLYGON);
-        this.right.load(
-                CStrings.RIGHT_INPUT, 
-                CStrings.RIGHT_MESH, 
-                CStrings.RIGHT_POLYGON);
         this.frame.setVisible(true);
     }
     /**
@@ -78,8 +87,10 @@ public class CMain extends JPanel
      * @param args Command line arguments.
      */
     public static void main(String[] args) {
-        if(CStrings.initialize()){
+    if(CStrings.initialize()){
+            /* Start program. */
             CMain prog = new CMain();
+            /* Debug program info. */
             System.out.println("Main class = " +prog + '.');
         }
     }
@@ -101,8 +112,6 @@ public class CMain extends JPanel
     public void windowClosed(WindowEvent e) {}
     /** Event API. Saving also the meshes on program exit.*/
     public void windowClosing(WindowEvent e){
-        this.left.save(CStrings.LEFT_MESH, CStrings.LEFT_POLYGON);
-        this.right.save(CStrings.RIGHT_MESH, CStrings.RIGHT_POLYGON);
         System.exit(0);
     }
     /** Event API. */
@@ -116,9 +125,11 @@ public class CMain extends JPanel
     /** Layout manager API. */
     public void addLayoutComponent(String name, Component comp){}
     /** 
-     * Setting the bounds of the application's main frame's componentes.
+     * Setting the bounds of the application's main frame's components.
      */
     public void layoutContainer(Container parent) {
+        /* Own layout manager derived. */
+        /* Define bounds of sub components. */
         Dimension size = parent.getSize();
         Rectangle bounds = new Rectangle();
         int s = this.sep.getPreferredSize().width;
@@ -165,23 +176,26 @@ public class CMain extends JPanel
     /**
      * Perform the morph operation. Show the progress bar during rendering.
      */
-    public void save(){
+    public void morph(){
         /* Store system time to calculate the duration. */
         long time = System.currentTimeMillis();
+        /* Generate left smoothed clip matrix. */
+        left.genClip();
+        /** Generate right smoothed clip matrix. */
+        right.genClip();
+        /* Split picture area into triangles. */
+        CTriangulation.triangulate();
+        /* Show wait cursor. */
         this.setCursor(new Cursor(Cursor.WAIT_CURSOR));
-        CMorphOperator morph = new CMorphOperator(this, 
-            this.left.getMesh(),
-            this.right.getMesh(),
-            this.left.getClip(new File(CStrings.LEFT_DEBUG)),
-            this.right.getClip(new File(CStrings.RIGHT_DEBUG)),
-            this.left.getContent(),
-            this.right.getContent(),
-            this.progress);
-        /* Not blocking. */
-        new Thread(morph).start();
+        /* Initialize morphing the pictures. */
+        CMorphOperator.morph(this, progress);
+        /* Start morphing as execution parallel to the modal progress bar. */
+        new Thread(new CMorphOperator()).start();
         /* Blocking made here! */
-        progress.open(morph);
+        progress.open();
+        /* Remove wait cursor. */
         this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+        /* Calculate duration. */
         time = System.currentTimeMillis() - time;
         time /= 1000;
         /* Print duration to the console. */
@@ -193,5 +207,12 @@ public class CMain extends JPanel
      */
     public JFrame getFrame(){
         return this.frame;
+    }
+    /**
+     * Delete the contents of both meshes.
+     */
+    public void initMesh(){
+        left.initMesh();
+        right.initMesh();
     }
 }

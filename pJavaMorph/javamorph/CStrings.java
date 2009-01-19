@@ -4,11 +4,11 @@ import java.io.*;
 import javax.swing.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: CStrings.
  * <br/>
@@ -26,11 +26,11 @@ public class CStrings {
     /** Dir from which this application has been started. */
     public static final String DIR = System.getProperty("user.dir");
     /** Location of the .jar distribution file. */
-    public static final String JAR = DIR + SEP + "JavaMorph_2009_01_04.jar";
+    public static final String JAR = DIR + SEP + "JavaMorph_2009_01_19.jar";
     /** Program name. */
     public static final String PROG = "JavaMorph";
     /** Program version. */
-    public static final String VERSION = "V 1.0";
+    public static final String VERSION = "V 1.1";
     /** Author of the program. */
     public static final String AUTHOR = "claus.erhard.wimmer@googlemail.com";
     /** License description. */
@@ -68,9 +68,16 @@ public class CStrings {
     /** Left clip matrix file name & path. */
     public static final String LEFT_DEBUG = DEBUGDIR + "left_debug.png";
     /** Right clip matrix file name & path. */
-    public static final String RIGHT_DEBUG = DEBUGDIR + "right_debug.pg";
+    public static final String RIGHT_DEBUG = DEBUGDIR + "right_debug.png";
     /** Help file name & path. */
     public static final String HELP = HELPDIR + "JavaMorph.pdf";
+    /** File to store the triangulation of the left mesh to. */
+    public static final String LEFT_TRI = DEBUGDIR + "t_left_triangles.png";
+    /** File to store the triangulation of the right mesh to. */
+    public static final String RIGHT_TRI = DEBUGDIR + "t_right_triangles.png";
+    /** File to store the triangulation of the 50% merged mesh to. */
+    public static final String MIDDLE_TRI = DEBUGDIR + "t_middle_triangles.png";
+    
     /**
      * Compose the name of one result output file.
      * @param n Number of the morph step.

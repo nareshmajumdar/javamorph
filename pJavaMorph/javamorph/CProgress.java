@@ -5,11 +5,11 @@ import java.awt.event.*;
 import javax.swing.*;
 
 /**
- * @version 1.0
+ * @version 1.1
  * <br/>
  * @author claus.erhard.wimmer@googlemail.com
  * <br/>
- * Program: JavaMorph V 1.0.
+ * Program: JavaMorph V 1.1.
  * <br/>
  * Class: CProgress.
  * <br/>
@@ -35,8 +35,6 @@ public class CProgress extends JDialog
     private JButton b_break = new JButton("Break!");
     /** Progress bar JComponent. */
     private JProgressBar b_progress = new JProgressBar();
-    /** Morph operator, needed to abort it. */
-    private CMorphOperator operator;
     /**
      * Constructor.
      * @param parent Parent JFrame to enable modal behavior.
@@ -55,13 +53,11 @@ public class CProgress extends JDialog
     }
     /**
      * Show the progress bar.
-     * @param operator Morph operator to enable user abort.
      */
-    public void open(CMorphOperator operator){
+    public void open(){
         this.b_progress.setValue(0);
         this.setLocation
         (parent.getLocation().x + 10, parent.getLocation().y + 10);
-        this.operator = operator;
         this.setSize(PREF_SIZE);
         this.setResizable(false);
         this.setVisible(true);
@@ -89,7 +85,7 @@ public class CProgress extends JDialog
      */
     public void actionPerformed(ActionEvent e) {
         if(this.b_break == e.getSource()){
-            operator.doBreak();
+            CMorphOperator.doBreak();
             this.close();
         }
     }
