@@ -65,6 +65,8 @@ public class CTriangulation{
     public static void triangulate(){
         Point p, l, r;
         clear();
+        /* Bug fix "Array index out of bounds" in CTriangulation.add().*/
+        order.clear();
         points.clear();
         width = CConfig.left_image.getWidth() + CConfig.right_image.getWidth();
         height = 
