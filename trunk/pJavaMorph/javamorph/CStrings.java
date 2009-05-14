@@ -77,6 +77,10 @@ public class CStrings {
     public static final String RIGHT_TRI = DEBUGDIR + "t_right_triangles.png";
     /** File to store the triangulation of the 50% merged mesh to. */
     public static final String MIDDLE_TRI = DEBUGDIR + "t_middle_triangles.png";
+    /** Left file name prefix. */
+    public static final String LEFT_PREFIX = "left";
+    /** Right file name prefix. */
+    public static final String RIGHT_PREFIX = "right";
     
     /**
      * Compose the name of one result output file.

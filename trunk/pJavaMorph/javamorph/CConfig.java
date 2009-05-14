@@ -144,10 +144,21 @@ public class CConfig extends JDialog implements Runnable, WindowListener{
     /** Static init() reading pictures. */
     static{
         try{
-            /* Read left picture. */
-            left_image = ImageIO.read(new File(CStrings.LEFT_INPUT));
-            /* Read right picture. */
-            right_image = ImageIO.read(new File(CStrings.RIGHT_INPUT));
+            /* List input directory to fetch image file (not only JPG type). */
+            File dir[] = new File(CStrings.INPUTDIR).listFiles();
+            /* Choose two files, more files forbidden in directory. */
+            for(File f : dir){
+                /* Left image. */
+                if(f.getName().toLowerCase().startsWith(CStrings.LEFT_PREFIX)){
+                    /* Let Java load. */
+                    left_image = ImageIO.read(f);
+                }
+                /* Right image. */
+                if(f.getName().toLowerCase().startsWith(CStrings.RIGHT_PREFIX)){
+                    /* Let Java load. */
+                    right_image = ImageIO.read(f);
+                }
+            }
             /* Calculate size of result picture. */
             int 
                 w = Math.max(left_image.getWidth(), right_image.getWidth()),
