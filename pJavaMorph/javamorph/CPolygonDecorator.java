@@ -204,14 +204,19 @@ public class CPolygonDecorator
      */
     public void run(){
         try{
-            FileOutputStream out = new FileOutputStream(f_poly);
-            out.write('\n');
-            /* Write one line for each point of the polygon. */
-            for(Point p: polygon){
-                out.write(("" + p.x + ' ').getBytes());
-                out.write(("" + p.y + '\n').getBytes());
+            /* Do not save empty polygon => avoid empty arry. */
+            if(0 < polygon.size()){
+                FileOutputStream out = new FileOutputStream(f_poly);
+                out.write('\n');
+                /* Write one line for each point of the polygon. */
+                for(Point p: polygon){
+                    out.write(("" + p.x + ' ').getBytes());
+                    out.write(("" + p.y + '\n').getBytes());
+                }
+                out.close();
+            }else{
+                f_poly.delete();
             }
-            out.close();
         }catch(Exception e){
             System.err.println(e.getMessage());
             e.printStackTrace();

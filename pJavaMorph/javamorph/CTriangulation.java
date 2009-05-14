@@ -63,6 +63,8 @@ public class CTriangulation{
      * Perform complete operation.
      */
     public static void triangulate(){
+long time = System.currentTimeMillis();
+        System.out.println("Begin triangulation.");
         Point p, l, r;
         clear();
         /* Bug fix "Array index out of bounds" in CTriangulation.add().*/
@@ -83,6 +85,7 @@ public class CTriangulation{
         }
         work();
         debug();
+System.out.println("End. Duration of triangulation = " + (System.currentTimeMillis() - time) + '.');
     }
     /**
      * Clear all permanent date of the collections.

@@ -155,15 +155,20 @@ public class CMeshDecorator
      */
     public void run(){
         try{
-            /* Provide the file stream. */
-            FileOutputStream out = new FileOutputStream(f_mesh);
-            out.write('\n');
-            /* For all points of the mesh: Write booth coordinates to file. */
-            for(Point p: mesh){
-                out.write(("" + p.x + ' ').getBytes());
-                out.write(("" + p.y + '\n').getBytes());
+            /* Do not save a mesh with zero points => avoid empty array. */
+            if(0 < mesh.size()){
+                /* Provide the file stream. */
+                FileOutputStream out = new FileOutputStream(f_mesh);
+                out.write('\n');
+                /* For all points of the mesh: Write booth coordinates to file. */
+                for(Point p: mesh){
+                    out.write(("" + p.x + ' ').getBytes());
+                    out.write(("" + p.y + '\n').getBytes());
+                }
+                out.close();
+            }else{
+                f_mesh.delete();
             }
-            out.close();
         }catch(Exception e){
             System.err.println(e.getMessage());
             e.printStackTrace();
