@@ -87,6 +87,8 @@ public class CStrings {
     public static final String LEFT_DEBUG = DEBUGDIR + "left_debug.png";
     /** Right clip matrix file name & path. */
     public static final String RIGHT_DEBUG = DEBUGDIR + "right_debug.png";
+    /** Copyright file name & path. */
+    public static final String COPYING = HELPDIR + "COPYING";
     /** Help file name & path. */
     public static final String HELP = HELPDIR + "JavaMorph.pdf";
     /** File to store the triangulation of the left mesh to. */
@@ -165,6 +167,7 @@ public class CStrings {
      * sub directories of the working directory.
      */
     public static void extractFiles(){
+        copyFile("help/COPYING", COPYING);
         copyFile("help/JavaMorph.pdf", HELP);
         copyFile("input/left.jpg", LEFT_INPUT);
         copyFile("input/right.jpg", RIGHT_INPUT);
