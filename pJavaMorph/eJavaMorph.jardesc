@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="/home/claus/Desktop/JavaMorph_2009_01_04.jar"/>
+    <jar path="/home/claus/Desktop/JavaMorph_2010_02_01.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/pJavaMorph/eJavaMorph.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -11,7 +11,13 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <javaElement handleIdentifier="=pJavaMorph"/>
+        <file path="/pJavaMorph/JavaMorph.png"/>
+        <javaElement handleIdentifier="=pJavaMorph/&lt;javamorph"/>
+        <javaElement handleIdentifier="=pJavaMorph/&lt;help"/>
+        <javaElement handleIdentifier="=pJavaMorph/&lt;input"/>
+        <javaElement handleIdentifier="=pJavaMorph/&lt;polygon"/>
+        <javaElement handleIdentifier="=pJavaMorph/&lt;debug"/>
+        <javaElement handleIdentifier="=pJavaMorph/&lt;mesh"/>
+        <javaElement handleIdentifier="=pJavaMorph/&lt;output"/>
     </selectedElements>
-    <fatjar builder="org.eclipse.jdt.ui.plain_jar_builder" launchConfig=""/>
 </jardesc>
